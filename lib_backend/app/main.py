@@ -5,7 +5,7 @@ from .routes.admin_route import router as admin_router
 from .routes.user_route import router as user_router
 app = FastAPI()
 
-Base.metadata.create_all(bind=engine)
+Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
 @app.get("/")

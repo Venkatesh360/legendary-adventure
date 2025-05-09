@@ -7,8 +7,7 @@ from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from ..database.config import session
 from sqlalchemy.orm import Session
-from ..models.user import User
-
+from ..models import user
 
 dotenv.load_dotenv()
 oauth_schema = OAuth2PasswordBearer(tokenUrl="api/user/login")
@@ -24,20 +23,17 @@ def get_db():
 def fifteen_days_from_now():
     return datetime.utcnow() + timedelta(days=15)
 
-
-def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
+def get_user_by_id(user_id: int, db: Session):
     
-    db_user = db.query(User).filter(User.id == user_id).first()
+    db_user = db.query(user.User).filter(user.User.id == user_id).first()
     
     if db_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")    
         
     return db_user
-    
         
 def get_token_data(token: str = Depends(oauth_schema)) -> dict:
     try:
-        print(token)
         SECRET_KEY = os.getenv("JWT_SECRET")
         ALGORITHM = str(os.getenv("ALOGRITHM"))
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -58,7 +54,6 @@ def get_token_data(token: str = Depends(oauth_schema)) -> dict:
         
     return payload
         
-
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt(10)).decode()
 

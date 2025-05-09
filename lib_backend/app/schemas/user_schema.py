@@ -17,9 +17,9 @@ class UserLogin(BaseModel):
 class UserOut(BaseModel):
     username: str
     email: str
-    cluster_key: str
     created_at: datetime
     updated_at: datetime
+    is_admin: bool
     
     class Config:
         orm_mode = True

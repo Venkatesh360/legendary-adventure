@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from ..models.user import User
 from ..schemas import user_schema
 from ..utils import utils
-from uuid import uuid4
 from ..utils.utils import get_db
 
 router = APIRouter()
@@ -25,7 +24,6 @@ def user_signup(user: user_schema.UserSignup, db: Session = Depends(get_db)):
         username=user.username,
         email=user.email,
         hashed_password=hashed,
-        cluster_key=str(uuid4())
     )
     
     db.add(new_user)
@@ -33,8 +31,7 @@ def user_signup(user: user_schema.UserSignup, db: Session = Depends(get_db)):
     db.refresh(new_user)
     
     token = utils.create_jwt({
-        "user_id": new_user.id, 
-        "cluster_key": new_user.cluster_key
+        "user_id": new_user.id
         })
     
     return {"access_token": token, "token_type": "bearer"}
@@ -42,6 +39,7 @@ def user_signup(user: user_schema.UserSignup, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def user_login(user: user_schema.UserLogin, db: Session = Depends(get_db)):
+    
     db_user = db.query(User).filter(User.email == user.email).first()
     
     if db_user is None:
@@ -59,8 +57,7 @@ def user_login(user: user_schema.UserLogin, db: Session = Depends(get_db)):
         )
         
     token = utils.create_jwt({
-        "user_id":db_user.id,
-        "cluster_key":db_user.cluster_key
+        "user_id":db_user.id
     })
     
     return {"access_token":token, "token_type": "bearer"}
