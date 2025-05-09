@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from ..utils.utils import require_admin, get_db, get_token_data
-from ..models.user_model import User
+from ..utils.utils import  get_db, get_token_data, get_user_by_id
+from ..models.user import User
 from sqlalchemy.orm import Session
 from ..schemas.user_schema import UserOutResponse,UserData
 from typing import List
@@ -11,9 +11,11 @@ dotenv.load_dotenv()
 
 
 @router.get("/get_all_user", response_model=UserOutResponse)
-def get_all_users(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def get_all_users(user: dict = Depends(get_token_data), db: Session = Depends(get_db)):
     
-    if not user.is_admin: #type: ignore
+    db_user = get_user_by_id(user.get("user_id"))  #type: ignore
+    
+    if not db_user.is_admin: #type: ignore
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User doesn't have admin level access"
@@ -32,18 +34,23 @@ def create_admin(access_key: str, user_data: UserData, db: Session= Depends(get_
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid access key"
             )
-    print(user_data)
     
-    db_user = db.query(User).filter(User.id == user_data.user_id).first()
+    db_user = get_user_by_id(user_id=user_data.user_id)
     
-    if db_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-        
     db_user.is_admin = True #type: ignore
-    
     db.commit()
     db.refresh(db_user)
-    return {"message": f"User {db_user.username} is granted admin access"}
+    
+    return {"message": f"user {db_user.username} is granted admin access"}
+    
+   
+@router.post("/lend_book")
+def lend_book(user :dict = Depends(get_token_data), db: Session = Depends(get_db)):
+    
+    db_user = get_user_by_id(user.get("user_id")) #type: ignore
+    
+    if not db_user.is_admin: #type: ignore
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User doesn't have admin level access"
+        )

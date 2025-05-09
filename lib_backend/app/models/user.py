@@ -1,7 +1,8 @@
 from sqlalchemy import Column, Integer, String, DateTime, func, Boolean
-from sqlalchemy.ext.declarative import declarative_base
+from ..database.config import Base
+from sqlalchemy.orm import relationship
+from .borrowed_book import BorrowedBook
 
-Base = declarative_base()
 
 class TimestampMixin:
     """
@@ -26,7 +27,8 @@ class User(Base, TimestampMixin):
     username = Column(String, nullable=False, unique=True)
     email = Column(String, nullable=False, unique=True, index=True)
     hashed_password = Column(String, nullable=False)
-    cluster_key = Column(String, nullable=False, index=True, unique=True)
     is_admin = Column(Boolean, default=False)
     
     
+    books_borrowed = relationship("BorrowedBook", foreign_keys=[BorrowedBook.borrower_id], back_populates="borrower")
+    books_lent = relationship("BorrowedBook", foreign_keys=[BorrowedBook.lender_id], back_populates="lender")

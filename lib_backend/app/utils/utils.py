@@ -5,9 +5,9 @@ import dotenv
 import os
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
-from ..database.db_config import session
+from ..database.config import session
 from sqlalchemy.orm import Session
-from ..models.user_model import User
+from ..models.user import User
 
 
 dotenv.load_dotenv()
@@ -21,9 +21,21 @@ def get_db():
     finally:
         db.close()
         
+def fifteen_days_from_now():
+    return datetime.utcnow() + timedelta(days=15)
 
+
+def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
+    
+    db_user = db.query(User).filter(User.id == user_id).first()
+    
+    if db_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")    
         
-def get_token_data(token: str = Depends(oauth_schema)) -> User:
+    return db_user
+    
+        
+def get_token_data(token: str = Depends(oauth_schema)) -> dict:
     try:
         print(token)
         SECRET_KEY = os.getenv("JWT_SECRET")
@@ -36,6 +48,7 @@ def get_token_data(token: str = Depends(oauth_schema)) -> User:
             detail="Token has expired",
             headers={"WWW-Authenticate": "Bearer"},
         )
+                
     except:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -44,22 +57,6 @@ def get_token_data(token: str = Depends(oauth_schema)) -> User:
         )
         
     return payload
-    
-
-
-def require_admin(user_data: dict = Depends(get_token_data), db: Session = Depends(get_db)) -> User:
-    
-    user_id = user_data.get("user_id")
-    
-    if user_id is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token require_admin")
-    
-    db_user = db.query(User).filter(User.id == user_id).first()
-    
-    if db_user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")    
-        
-    return db_user
         
 
 def hash_password(password: str) -> str:
